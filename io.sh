@@ -62,13 +62,13 @@ function user_input() {
 
   local labels=("$@")
   if [[ -n "$default_label" ]]; then
-    labels+=("${input_color}[${default_label}]> ")
-  else
-    labels+=("> ")
+    labels+=(" ${input_color}[${default_label}]")
   fi
 
   # Print labels.
   ansi_span "${labels[@]}" >&2
+
+  printf  "%s" ": ">&2
 
   # Set input color if provided.
   if [[ -n "$input_color" ]]; then
