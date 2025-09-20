@@ -353,7 +353,8 @@ function decode_file() {
 
   deep_decode_file() {
     local file="$1"
-    local prefix="$2"
+    local depth="$2"
+    local prefix="$3"
     local decoded_file
     local import_file
     local merged_import_files=()
@@ -374,18 +375,18 @@ function decode_file() {
 
       if [[ -v merged_files["$import_file"] ]]; then
         if [[ -n "${merged_files["$import_file"]}" ]]; then
-          ansi_span "$prefix$connector" "\033[0;33mFile:" " $import_file ↑\n" >&2
+          ansi_span "$prefix$connector" "\033[0;31mFile:" " $import_file ↑\n" >&2
           merged_import_files+=("${merged_files["$import_file"]}")
         else
           error "Detected cycle '$file' -> '$import_file'"
         fi
       else
-        ansi_span "$prefix$connector" "\033[0;32mFile:" " $import_file \n" >&2
+        ansi_span "$prefix$connector" "\033[0;$((32 + depth))mFile:" " $import_file \n" >&2
 
         local next_prefix="$prefix"
         [[ $is_last -eq 1 ]] && next_prefix+="   " || next_prefix+="│  "
 
-        deep_decode_file "$import_file" "$next_prefix"
+        deep_decode_file "$import_file" $((depth + 1)) "$next_prefix"
         merged_import_files+=("$merged")
       fi
     done
@@ -394,7 +395,7 @@ function decode_file() {
     merged_files["$file"]="$merged"
   }
 
-  deep_decode_file "$file" ""
+  deep_decode_file "$file" 1 ""
 
   printf "%s" "$merged"
 }
