@@ -1,61 +1,244 @@
-###############################
-# Git Line Endings            #
-###############################
+# ==============================================================================
+# Default Behaviour
+# ==============================================================================
 
-# Set default behaviour to automatically normalize line endings.
-*               text=auto
+# Normalise all unrecognised text files to LF in the repository.
+# Git will convert to the platform line ending on checkout (CRLF on Windows,
+# LF on macOS/Linux). This is the safest default for cross-platform teams.
+*                   text=auto
 
-# Java sources
-*.java          text diff=java
-*.groovy        text diff=java
-*.scala         text diff=java
-*.gradle        text diff=java
+# ==============================================================================
+# Kotlin & Gradle Sources
+# ==============================================================================
 
-# Kotlin sources
-*.kt            text diff=kotlin
-*.kts           text diff=kotlin
+# Kotlin source and script files
+*.kt                text diff=kotlin
+*.kts               text diff=kotlin
 
-# These files are text and should be normalized (Convert crlf => lf)
-*.css           text diff=css
-*.scss          text diff=css
-*.sass          text
-*.df            text
-*.htm           text diff=html
-*.html          text diff=html
-*.js            text
-*.mjs           text
-*.cjs           text
-*.jsp           text
-*.jspf          text
-*.jspx          text
-*.properties    text
-*.tld           text
-*.tag           text
-*.tagx          text
-*.xml           text eol=lf
-*.sql           text
-*.q             text
-*.md            text eol=lf
+# Gradle Kotlin DSL build files — explicit entry documents intent and survives
+# future rule changes; *.kts above already catches these, but reviewers benefit
+# from seeing the primary build file format called out unambiguously.
+*.gradle.kts        text diff=kotlin
 
-# These files are binary and should be left untouched
-# (binary is a macro for -text -diff)
-*.class         binary
-*.dll           binary
-*.ear           binary
-*.jar           binary
-*.so            binary
-*.war           binary
-*.jks           binary
+# Gradle build files (Groovy DSL — legacy; kept for mixed-DSL modules)
+*.gradle            text diff=java
 
-# Common build-tool wrapper scripts ('.cmd' versions are handled by 'Common.gitattributes')
-mvn             text eol=lf executable
-gradlew         text eol=lf executable
+# Gradle wrapper scripts — must be LF on disk so POSIX shells can execute them
+# directly on Linux/macOS CI runners without conversion.
+gradlew             text eol=lf
+gradlew.bat         text eol=crlf
 
-# Note: executable is a non-standard attribute, and it is used by the release plugin
-*.sh            text eol=lf executable
-*.cgi           text eol=lf executable
 
-# Force batch scripts to always use CRLF line endings so that if a repo is accessed
-# in Windows via a file share from Linux, the scripts will work.
-*.bat           text eol=crlf
-*.cmd           text eol=crlf
+# ==============================================================================
+# JVM / Java Interop
+# ==============================================================================
+
+# Java sources present in some KMP modules (expect/actual Java implementations,
+# annotation processors, or legacy interop layers)
+*.java              text diff=java
+
+
+# ==============================================================================
+# Apple / iOS (Kotlin/Native interop)
+# ==============================================================================
+
+# Swift sources (Kotlin/Native Swift interop, iOS app entry points)
+*.swift             text diff=swift
+
+# Objective-C implementation and interface files (cinterop headers, legacy glue)
+*.m                 text diff=objc
+*.mm                text diff=objc
+
+# C/C++ headers used by cinterop def files
+*.h                 text diff=cpp
+*.hpp               text diff=cpp
+*.c                 text diff=cpp
+*.cpp               text diff=cpp
+
+# Kotlin/Native cinterop definition files
+*.def               text
+
+# Kotlin binary-compatibility-validator API dump files — text, tracked as part
+# of the library's public ABI contract; diffs must be human-readable.
+*.api               text
+
+
+# ==============================================================================
+# Web / JavaScript / WebAssembly (Kotlin/JS & Kotlin/Wasm targets)
+# ==============================================================================
+
+*.js                text diff=javascript
+*.mjs               text diff=javascript
+*.cjs               text diff=javascript
+*.ts                text diff=javascript
+*.tsx               text diff=javascript
+
+*.css               text diff=css
+*.scss              text diff=css
+*.sass              text diff=css
+
+*.html              text diff=html
+*.htm               text diff=html
+
+
+# ==============================================================================
+# Configuration & Data Formats
+# ==============================================================================
+
+*.xml               text
+*.json              text
+*.yaml              text
+*.yml               text
+*.toml              text
+*.properties        text
+*.ini               text
+*.cfg               text
+*.conf              text
+
+
+# ==============================================================================
+# Database & Query Files
+# ==============================================================================
+
+# SQLDelight source files (.sq) and migration files (.sqm)
+*.sq                text
+*.sqm               text
+
+# Plain SQL scripts
+*.sql               text
+
+
+# ==============================================================================
+# Documentation & Markup
+# ==============================================================================
+
+*.md                text
+*.mdx               text
+*.txt               text
+*.rst               text
+*.adoc              text
+
+
+# ==============================================================================
+# Shell & Script Files
+# ==============================================================================
+
+# Shell scripts must use LF so they are executable on POSIX systems directly
+# from a Windows checkout. Note: the execute permission bit itself must be set
+# separately via `git update-index --chmod=+x` and is not controlled here.
+*.sh                text eol=lf
+*.bash              text eol=lf
+*.cgi               text eol=lf
+
+# Windows batch scripts require CRLF to run correctly on Windows, even when
+# checked out from a Linux/macOS machine via a network share or WSL mount.
+*.bat               text eol=crlf
+*.cmd               text eol=crlf
+
+# Python scripts (used in CI tooling and build utilities)
+*.py                text diff=python
+
+
+# ==============================================================================
+# Binary — JVM Artefacts
+# ==============================================================================
+
+# "binary" is a Git macro for "-text -diff": disables line-ending conversion
+# and textual diffing. All compiled and packaged JVM outputs belong here.
+*.class             binary
+*.jar               binary
+*.aar               binary
+*.war               binary
+*.ear               binary
+
+
+# ==============================================================================
+# Binary — Kotlin/Native & Apple Framework Artefacts
+# ==============================================================================
+
+*.klib              binary
+*.a                 binary
+*.so                binary
+*.dylib             binary
+*.framework         binary
+*.xcframework       binary
+*.kexe              binary
+
+
+# ==============================================================================
+# Binary — Native Libraries & Shared Objects
+# ==============================================================================
+
+*.dll               binary
+*.exe               binary
+*.lib               binary
+
+
+# ==============================================================================
+# Binary — Signing & Certificates
+# ==============================================================================
+
+*.jks               binary
+*.keystore          binary
+*.p12               binary
+*.cer               binary
+*.der               binary
+
+
+# ==============================================================================
+# Binary — Databases
+# ==============================================================================
+
+*.db                binary
+*.sqlite            binary
+*.sqlite3           binary
+*.realm             binary
+
+
+# ==============================================================================
+# Binary — Images & Media
+# ==============================================================================
+
+*.png               binary
+*.jpg               binary
+*.jpeg              binary
+*.gif               binary
+*.webp              binary
+*.ico               binary
+# SVG is XML-based text; force LF to keep diffs stable across design tools
+# that occasionally emit CRLF (Figma export, Inkscape on Windows, etc.).
+*.svg               text eol=lf
+*.pdf               binary
+*.ttf               binary
+*.otf               binary
+*.woff              binary
+*.woff2             binary
+
+
+# ==============================================================================
+# Binary — Archives & Packages
+# ==============================================================================
+
+*.zip               binary
+*.tar               binary
+*.gz                binary
+*.bz2               binary
+*.7z                binary
+*.rar               binary
+*.xz                binary
+
+
+# ==============================================================================
+# GitHub Linguist Overrides
+# ==============================================================================
+
+# KSP and KAPT generated sources — excluded from language statistics because
+# they are machine-produced and do not reflect authored code.
+**/generated/**     linguist-generated=true
+
+# Gradle wrapper JAR — binary dependency, not authored code
+gradle/wrapper/gradle-wrapper.jar  linguist-vendored=true
+
+# Lock files — dependency snapshots, not source code
+**/package-lock.json    linguist-generated=true
+**/yarn.lock            linguist-generated=true

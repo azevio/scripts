@@ -1,0 +1,272 @@
+# ==============================================================================
+# Diff Drivers
+#
+# A diff driver customises the hunk header line (the text after @@) shown in
+# `git diff`, `git log -p`, and code-review tools. The xfuncname regex matches
+# the nearest preceding declaration line — class, function, extension, etc.
+# Entries here are only needed when the built-in driver is absent or inadequate.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Swift
+#
+# Git's built-in `swift` driver (merged in 2022) uses a minimal pattern that
+# misses modern Swift declarations: actors, async functions, property wrappers,
+# and access-level combinations. The pattern below covers all of them.
+#
+# Activated by: *.swift text diff=swift  (in .gitattributes)
+# ------------------------------------------------------------------------------
+[diff "swift"]
+    xfuncname = ^[ \t]*(((private|public|internal|open|fileprivate|final|override|static|class|nonisolated|isolated|distributed|lazy|weak|unowned)[ \t]+)*(@[A-Za-z]+[ \t]+)*(actor|class|struct|enum|protocol|extension|func|var|let|subscript|init|deinit)[ \t].*)$
+
+# ------------------------------------------------------------------------------
+# SQLDelight (.sq source files)
+#
+# No built-in Git driver exists for SQL dialects. The pattern below surfaces the
+# nearest CREATE statement or named query label in the hunk header, making
+# migration and schema diffs significantly easier to navigate.
+#
+# Activated by: *.sq text diff=sqdelight  (in .gitattributes)
+# ------------------------------------------------------------------------------
+[diff "sqdelight"]
+    xfuncname = ^([A-Za-z][A-Za-z0-9_]*:[ \t]*$|[ \t]*(CREATE|DROP|ALTER|INSERT|UPDATE|DELETE|SELECT)[ \t].*)
+
+# ------------------------------------------------------------------------------
+# SQLDelight Migrations (.sqm files)
+#
+# Migration files follow the same SQL dialect; a separate driver entry allows
+# independent tuning without affecting .sq source file diffs.
+#
+# Activated by: *.sqm text diff=sqmigration  (in .gitattributes)
+# ------------------------------------------------------------------------------
+[diff "sqmigration"]
+    xfuncname = ^([A-Za-z][A-Za-z0-9_]*:[ \t]*$|[ \t]*(CREATE|DROP|ALTER|INSERT|UPDATE|DELETE|SELECT|PRAGMA)[ \t].*)
+
+# ------------------------------------------------------------------------------
+# Kotlin Binary-Compatibility-Validator API dumps (.api files)
+#
+# API dump files use a structured text format. The pattern surfaces class and
+# interface declarations so reviewers can see which type's public API changed.
+#
+# Activated by: *.api text diff=kotlinapi  (in .gitattributes)
+# ------------------------------------------------------------------------------
+[diff "kotlinapi"]
+    xfuncname = ^(public|final|abstract|sealed|open|internal).*class .*
+
+
+# ==============================================================================
+# Core Settings
+# ==============================================================================
+
+[core]
+    # Reject commits that introduce mixed or CRLF line endings in files marked
+    # as text. Enforces the normalisation declared in .gitattributes.
+    # Note: core.ignorecase is intentionally absent — Git auto-detects filesystem
+    # case-sensitivity. Case-collision protection belongs in CI (e.g. a pre-receive
+    # hook or a lint step), not in a shared config that may conflict with APFS.
+    safecrlf = true
+
+    # Detect and warn about accidental introduction of whitespace errors
+    # (trailing whitespace, spaces before tabs, blank lines at EOF).
+    whitespace = trailing-space,space-before-tab,blank-at-eof
+
+
+# ==============================================================================
+# Fetch & Remote
+# ==============================================================================
+
+[fetch]
+    # Automatically delete local remote-tracking branches that have been deleted
+    # on the remote. Prevents stale branch accumulation in long-lived repos.
+    prune = true
+
+    # Also prune stale remote-tracking tags. Mirrors the behaviour of --prune-tags.
+    pruneTags = true
+
+    # Verify that fetched objects are reachable from advertised tips.
+    # Prevents object injection attacks via crafted remote responses.
+    fsckObjects = true
+
+
+# ==============================================================================
+# Pull
+# ==============================================================================
+
+[pull]
+    # Rebase local commits on top of the fetched branch instead of creating a
+    # merge commit. Keeps the project history linear and bisect-friendly.
+    # Developers who prefer merge commits can override locally.
+    rebase = true
+
+
+# ==============================================================================
+# Rebase
+# ==============================================================================
+
+[rebase]
+    # Automatically stash uncommitted changes before a rebase and restore them
+    # afterward. Removes the friction of needing a clean working tree.
+    autoStash = true
+
+    # Warn when a rebase would cause a commit to be dropped (e.g. already
+    # upstream). Prevents silent loss of work.
+    missingCommitsCheck = warn
+
+
+# ==============================================================================
+# Merge
+# ==============================================================================
+
+[merge]
+    # Use the "zdiff3" conflict style, which includes the common ancestor block
+    # in addition to both sides. Provides more context for resolving conflicts
+    # correctly and is the recommended style for teams doing frequent rebases.
+    conflictstyle = zdiff3
+
+    # merge.ff controls fast-forward behaviour and is deliberately left as a
+    # commented opt-in rather than a global default. Different branch types have
+    # different needs: feature branches benefit from explicit merge commits for
+    # traceability; hotfix branches often prefer fast-forward. Configure per-repo
+    # or per-branch rather than globally:
+    #   git config merge.ff false          ← repo-level
+    #   git config branch.<name>.mergeoptions "--no-ff"  ← branch-level
+    # ff = false
+
+    # Verify GPG signatures on the tip commit of branches being merged.
+    # Recommended for repositories with a signed-commit policy.
+    # verifySignatures = true  ← uncomment when GPG signing is enforced
+
+
+# ==============================================================================
+# Rerere — Reuse Recorded Resolutions
+# ==============================================================================
+
+[rerere]
+    # Record conflict resolutions and replay them automatically when the same
+    # conflict is encountered again (e.g. after a rebase or a repeated merge).
+    # Significantly reduces friction on long-running feature branches.
+    enabled = true
+
+    # Automatically stage files after rerere resolves their conflicts.
+    autoupdate = true
+
+
+# ==============================================================================
+# Branch
+# ==============================================================================
+
+[branch]
+    # Sort branches by most-recently-committed-to descending.
+    # `git branch -a` lists active branches at the top rather than alphabetically.
+    sort = -committerdate
+
+    # When creating a new branch that tracks a remote, always set up the
+    # tracking relationship automatically. Ensures `git push` and `git pull`
+    # work without explicit --set-upstream on first use.
+    autoSetupMerge = always
+
+    # New branches created from a remote tracking branch inherit the rebase
+    # pull strategy rather than merge, consistent with [pull] rebase = true.
+    autoSetupRebase = always
+
+
+# ==============================================================================
+# Tag
+# ==============================================================================
+
+[tag]
+    # Sort tags by version number (semantic versioning) rather than
+    # lexicographically. `git tag -l` lists v1.10.0 after v1.9.0, not before.
+    sort = version:refname
+
+
+# ==============================================================================
+# Log & Pretty Printing
+# ==============================================================================
+
+[log]
+    # Follow renames when using `git log -- <path>`. Essential for a KMP repo
+    # where source files move between modules or are reorganised across targets.
+    follow = true
+
+    # Applies colours to branch graph lines when --graph is used explicitly
+    # (e.g. `git log --graph --oneline`). Does not enable graph output by itself.
+    graphColors = true
+
+
+# ==============================================================================
+# Diff (Global Display)
+# ==============================================================================
+
+[diff]
+    # Use the "histogram" algorithm rather than the default "myers" algorithm.
+    # Produces significantly cleaner diffs for Kotlin/Swift source by avoiding
+    # spurious matches on common short tokens (braces, keywords).
+    algorithm = histogram
+
+    # Show moved code blocks in a different colour in `git diff --color-moved`.
+    colorMoved = default
+
+    # Detect renames and copies within a diff. Surfaces file moves clearly
+    # rather than showing a full delete + add for each renamed file.
+    renames = copies
+
+
+# ==============================================================================
+# Status
+# ==============================================================================
+
+[status]
+    # Show individual files inside untracked directories rather than collapsing
+    # them. Prevents accidentally committing partial content from a new module.
+    showUntrackedFiles = all
+
+    # Show the branch and tracking info in short status output.
+    branch = true
+
+
+# ==============================================================================
+# Transfer & Receive
+# ==============================================================================
+
+[transfer]
+    # Verify the integrity of received objects. Detects repository corruption
+    # or tampering at the point of transfer rather than at first use.
+    fsckObjects = true
+
+
+# ==============================================================================
+# Push
+# ==============================================================================
+
+[push]
+    # "simple" pushes the current branch to its upstream tracking branch and
+    # refuses if the remote branch name differs. Safest default; prevents
+    # accidentally pushing to the wrong remote branch.
+    default = simple
+
+    # Automatically create the upstream tracking branch on first push of a new
+    # local branch, eliminating the need for --set-upstream / -u on every new branch.
+    autoSetupRemote = true
+
+
+# ==============================================================================
+# Commit
+# ==============================================================================
+
+[commit]
+    # "scissors" inserts a clearly visible cut line (# ----- >8 -----) between
+    # the commit message area and the diff/status block in the editor. Everything
+    # below the scissors is stripped from the final message. Reduces accidental
+    # inclusion of diff noise in commit messages, especially useful in large teams.
+    cleanup = scissors
+
+
+# ==============================================================================
+# Init
+# ==============================================================================
+
+[init]
+    # Use "main" as the default branch name for all new repositories, consistent
+    # with GitHub, GitLab, and current enterprise conventions.
+    defaultBranch = main

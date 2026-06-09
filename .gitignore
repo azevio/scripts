@@ -1,19 +1,270 @@
+# ==============================================================================
+# IDEs & Editors
+# ==============================================================================
+
+# JetBrains (IntelliJ IDEA, Android Studio)
+.idea/
+
+# Fleet IDE state and system cache
+.fleet/
+.fleet-system/
+
+# IntelliJ module / project files — fully regenerated from Gradle, never hand-edited
 *.iml
-.kotlin
-.gradle
+*.ipr
+*.iws
+
+# VS Code workspace state (not portable across machines)
+.vscode/
+
+# Eclipse (rare in KMP projects, but present in some CI containers)
+.classpath
+.project
+.settings/
+
+
+# ==============================================================================
+# Kotlin & Gradle
+# ==============================================================================
+
+# Gradle daemon state, local caches, and per-machine configuration
+.gradle/
+
+# Kotlin daemon and incremental compilation caches
+.kotlin/
+
+# Gradle wrapper JAR must be tracked so fresh checkouts can bootstrap themselves
+# without requiring a pre-installed Gradle distribution on the machine.
+!gradle/wrapper/gradle-wrapper.jar
+
+# Generated version-catalog lock files produced by Gradle's dependency-locking
+# feature (e.g. .libs.versions.toml). The canonical catalog at
+# gradle/libs.versions.toml is source-controlled and always tracked.
+gradle/.*.toml
+
+# Gradle Develocity / Build Scan plugin local token and session cache.
+# Retained for teams using the Gradle Enterprise plugin; harmless otherwise.
+.gradle-enterprise/
+.build-scan/
+
+
+# ==============================================================================
+# Build Outputs & Diagnostics
+# ==============================================================================
+
+# All module build directories — covers JVM class files, Android APK/AAB,
+# Kotlin/Native klibs, JS bundles, and Wasm artefacts.
 **/build/
-xcuserdata
-!src/**/build/
-#local.properties
-.idea
-.fleet
-.DS_Store
-captures
-.externalNativeBuild
-.cxx
-*.xcodeproj/*
-!*.xcodeproj/project.pbxproj
-!*.xcodeproj/xcshareddata/
-!*.xcodeproj/project.xcworkspace/
-!*.xcworkspace/contents.xcworkspacedata
+
+# IntelliJ / Gradle "out" directories (legacy layout, still emitted by some plugins)
+**/out/
+
+# Android NDK / CMake intermediates
+.cxx/
+.externalNativeBuild/
+**/cmake-build-*/
+
+# Android Studio profiler and memory captures (large binary, always machine-local)
+**/captures/
+
+# JVM fatal-error logs and JVM replay logs
+**/hs_err*.log
+**/replay_pid*.log
+
+# JVM heap dumps — can reach several gigabytes; never belongs in version control
+**/*.hprof
+
+# Kotlin/Native intermediate object files, bitcode, and toolchain caches
+**/*.kexe
+**/*.bc
+**/kotlin-native-*/
+
+# Kotlin/Native dSYM debug symbol bundles (emitted during iOS framework builds)
+**/*.dSYM/
+
+
+# ==============================================================================
+# Apple / Xcode (Kotlin/Native iOS target)
+# ==============================================================================
+
+# Per-user Xcode workspace state (window layout, breakpoints, running targets)
+**/xcuserdata/
+
+# Shared workspace settings that contain machine-local paths (derived data, etc.)
 **/xcshareddata/WorkspaceSettings.xcsettings
+
+# Xcode derived data and distribution archives (always machine-local)
+**/DerivedData/
+**/*.xcarchive
+
+
+# ==============================================================================
+# JavaScript / WebAssembly (Kotlin/JS & Kotlin/Wasm targets)
+# ==============================================================================
+
+# NPM / Yarn dependency trees — fully restored via `npm ci` or `yarn install`
+**/node_modules/
+
+# Generated worker package manifests and lock-files emitted by Kotlin/JS tooling.
+# These are produced at build time; the canonical dependency declaration lives
+# in the Gradle build scripts, not in these generated files.
+**/worker/package.json
+**/worker/package-lock.json
+**/worker/yarn.lock
+
+# Webpack / Vite / Rollup cache and output directories.
+# Kotlin/JS already emits into build/ (covered above); these patterns cover
+# any JS tooling run outside the Gradle lifecycle.
+**/.cache/
+**/dist/
+
+# Yarn plug'n'play artefacts (Yarn Berry / Yarn 2+)
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.pnp.*
+
+# Android Studio navigation component cache (generated from nav graph XML)
+.navigation/
+
+
+# ==============================================================================
+# Secrets, Signing & Credentials  ⚠  NEVER COMMIT THESE  ⚠
+# ==============================================================================
+
+# Android local SDK/NDK paths and signing config overrides
+local.properties
+
+# Android keystore files — both debug and release variants
+**/*.jks
+**/*.keystore
+
+# PGP / GPG private keys and symmetrically encrypted payloads
+**/*.gpg
+**/*private*.asc
+
+# PKCS#12 certificate bundles (iOS distribution certs, mutual-TLS API clients)
+**/*.p12
+
+# .pfx is the same format on Windows/.NET.
+**/*.pfx
+
+# PEM-encoded private keys only. Public certificates and CA bundles are
+# legitimately tracked in many enterprise repositories; a blanket *.pem rule
+# would silently hide them. Scope the exclusion to private-key files.
+**/*private*.pem
+**/*key*.pem
+
+# Generic environment variable files (local overrides, CI secrets, etc.)
+**/.env
+**/.env.*
+# Re-track canonical template files so developers know which variables are required
+!**/.env.example
+!**/.env.template
+!**/.env.sample
+
+# Firebase and GCP service credentials
+**/google-services.json
+**/GoogleService-Info.plist
+**/*-service-account*.json
+**/*credentials*.json
+
+# Kotzilla (Koin analytics/monitoring) project configuration.
+# Contains appId, keyId, and apiKey — treat as a secret.
+# Each module that uses the SDK has its own copy (shared/, composeApp/, app/, etc.).
+**/kotzilla.json
+
+
+# ==============================================================================
+# Dependencies & Custom Tooling Caches
+# ==============================================================================
+
+# Project-local dependency download cache (used by some KMP bootstrap setups)
+**/dependencies/
+
+# Note: /submodules/* is intentionally absent. Native Git submodules are
+# registered in .gitmodules and tracked by Git itself; their working-tree
+# contents are managed via `git submodule update --init`.
+
+
+# ==============================================================================
+# Generated Code (KSP / KAPT / Room / SQLDelight)
+# ==============================================================================
+
+# KSP and KAPT write generated sources into build/ (already excluded above).
+# If your project is configured to write generated sources to a path outside
+# build/, add those paths explicitly here. Example:
+#   **/generated/ksp/
+#
+# Room schema JSON exports capture migration history and MUST be tracked.
+# They are intentionally NOT excluded here. Ensure each module's Room schema
+# export directory points to a path under src/ or a dedicated schemas/ folder
+# in the module root, and verify it is not caught by any other rule above.
+#
+# SQLDelight generated Kotlin sources are written to build/ and are already
+# excluded. The .sq and .sqm source files are always tracked.
+
+
+# ==============================================================================
+# Logs & Temporary Files
+# ==============================================================================
+
+# Generic log files
+*.log
+*.log.*
+
+# macOS resource-fork sidecar files and archive metadata
+**/.DS_Store
+**/__MACOSX/
+
+# Windows Explorer thumbnail and shell metadata cache
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux KDE directory view settings
+.directory
+
+# Vim / Emacs swap, lock, and backup files
+*.swp
+*.swo
+*~
+\#*\#
+
+
+# ==============================================================================
+# CI / CD Artefacts
+# ==============================================================================
+
+# JUnit / test-framework XML result files — uploaded to CI dashboards at runtime;
+# storing them in history provides no value and inflates repository size.
+**/test-results/
+**/TEST-*.xml
+
+# Code-coverage reports — regenerated on every CI run
+**/coverage/
+**/jacoco/
+**/*.exec
+
+# JetBrains Kover coverage output (coverage reports generated by the Kover Gradle plugin)
+**/kover/
+
+# Detekt and Ktlint static-analysis HTML/XML reports
+**/reports/detekt/
+**/reports/ktlint/
+
+
+# ==============================================================================
+# Project-Specific Assets (intentional exclusions)
+# ==============================================================================
+
+# App icon source files are maintained in a dedicated design repository;
+# compiled PNGs placed here are intermediate build artefacts.
+**/app-icon*.png
+
+# License header template files consumed by the licenser Gradle plugin at build
+# time — not meaningful to track in version control.
+**/licenses/.license.header.*
+
+# Web favicon variants produced by the asset pipeline during the JS/Wasm build
+**/resources*/favicon*
