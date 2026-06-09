@@ -142,6 +142,7 @@ function substitute_string() {
 
   local getter="${1:-bash_env}"
   local evaluator="${2:-bash_c}"
+  # shellcheck disable=SC2034
   local -A empty_cache=()
   local -n cache="${3:-empty_cache}"
   local source
