@@ -25,15 +25,19 @@ setup() {
   is_int "1"
   is_float "1.5"
   is_str "hello"
-  ! is_bool "1"
-  ! is_int "hello"
+  run is_bool "1"
+  [ "$status" -eq 1 ]
+  run is_int "hello"
+  [ "$status" -eq 1 ]
 }
 
 @test "is_scalar accepts scalars and rejects null and objects" {
   is_scalar "world"
   is_scalar "42"
-  ! is_scalar ""
-  ! is_scalar $'a:\n  b: 1'
+  run is_scalar ""
+  [ "$status" -eq 1 ]
+  run is_scalar $'a:\n  b: 1'
+  [ "$status" -eq 1 ]
 }
 
 @test "is_seq / is_map / is_object discriminate objects" {
@@ -41,7 +45,8 @@ setup() {
   is_map "a: 1"
   is_object "[1]"
   is_object "a: 1"
-  ! is_object "scalar"
+  run is_object "scalar"
+  [ "$status" -eq 1 ]
 }
 
 # --- document helpers ---
@@ -63,7 +68,8 @@ setup() {
 
 @test "contains reports present and absent paths" {
   contains "a.b" $'a:\n  b: 1'
-  ! contains "a.z" $'a:\n  b: 1'
+  run contains "a.z" $'a:\n  b: 1'
+  [ "$status" -eq 1 ]
 }
 
 @test "get reads nested values" {
@@ -192,7 +198,7 @@ setup() {
 }
 
 @test "substitute keeps unknown options out of the document" {
-  wrapped() { substitute -zz true "" "a: 1" </dev/null; }
+  wrapped() { substitute -zz "" "a: 1" </dev/null; }
   run --separate-stderr wrapped
   [ "$output" = "a: 1" ]
   [[ "$stderr" == *"Unknown option -zz"* ]]

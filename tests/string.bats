@@ -305,7 +305,7 @@ setup() {
 # --- option handling ---
 
 @test "unknown options go to stderr, not into the output" {
-  sub() { substitute_string -zz true -e false <<<'plain'; }
+  sub() { substitute_string -zz -e false <<<'plain'; }
   run --separate-stderr sub
   [ "$output" = "plain" ]
   [[ "$stderr" == *"Unknown option -zz"* ]]

@@ -71,7 +71,7 @@ setup() {
 
 @test "user_input falls back to the default on empty input" {
   empty() { printf '\n' | user_input "def"; }
-  run empty
+  run --separate-stderr empty
   [ "$output" = "def" ]
 }
 
