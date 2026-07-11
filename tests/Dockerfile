@@ -2,7 +2,7 @@ FROM debian:stable-slim
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      bash bats ca-certificates curl gnupg jq perl \
+      bash bats ca-certificates curl gnupg jq kcov perl \
  && rm -rf /var/lib/apt/lists/*
 
 ARG YQ_VERSION=v4.47.1

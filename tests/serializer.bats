@@ -173,10 +173,36 @@ setup() {
 # --- substitute ---
 
 @test "substitute resolves placeholders against the document itself" {
-  wrapped() { substitute "" $'name: world\ngreet: "hi ${name}"' </dev/null; }
+  wrapped() { substitute "" $'name: world\ngreet: "hi ${name}"' </dev/null | yq -r '.greet'; }
   run wrapped
   [ "$status" -eq 0 ]
-  [ "$output" = $'name: world\ngreet: "hi world"' ]
+  [ "$output" = "hi world" ]
+}
+
+@test "substitute works on JSON documents" {
+  wrapped() { substitute "" '{"name":"world","greet":"hi ${name}"}' </dev/null | yq -r '.greet'; }
+  run wrapped
+  [ "$status" -eq 0 ]
+  [ "$output" = "hi world" ]
+}
+
+@test "substitute keeps multibyte content intact" {
+  wrapped() { substitute "" $'name: wörld\ngreet: "héllo ${name} ✓"' </dev/null | yq -r '.greet'; }
+  run wrapped
+  [ "$output" = "héllo wörld ✓" ]
+}
+
+@test "substituted values keep their string type" {
+  wrapped() { substitute "port: 8080" $'x: "${port}"' </dev/null | yq '.x | tag'; }
+  run wrapped
+  [ "$output" = "!!str" ]
+}
+
+@test "structured values interpolate into strings as YAML text" {
+  wrapped() { substitute "" $'m:\n  q: "${x}"\nx: 2\ns: "${m}"' </dev/null | yq -r '.s' | yq -r '.q'; }
+  run wrapped
+  [ "$status" -eq 0 ]
+  [ "$output" = "2" ]
 }
 
 @test "substitute resolves placeholders against an explicit values document" {

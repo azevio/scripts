@@ -5,6 +5,8 @@ setup() {
   load_lib env.sh
 }
 
+# --- platform ---
+
 @test "os_name matches uname -s" {
   run os_name
   [ "$output" = "$(uname -s)" ]
@@ -14,6 +16,8 @@ setup() {
   run arch_name
   [ "$output" = "$(uname -m)" ]
 }
+
+# --- ensure_cmd ---
 
 @test "ensure_cmd passes for an existing command" {
   run ensure_cmd bash
@@ -26,6 +30,8 @@ setup() {
   [ "$status" -eq 1 ]
   [[ "$output" == *"Required command not found"* ]]
 }
+
+# --- bash_env ---
 
 @test "bash_env resolves a set variable by name" {
   export FOO_BATS=val
@@ -80,6 +86,8 @@ setup() {
   [ "$status" -eq 101 ]
   [ "$output" = "" ]
 }
+
+# --- bash_c ---
 
 @test "bash_c runs a script and returns its output" {
   run bash_c 'printf hi'

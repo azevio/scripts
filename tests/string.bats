@@ -83,6 +83,16 @@ setup() {
   [ "$output" = "0" ]
 }
 
+@test "match_groups_at handles multibyte input as characters" {
+  wrapped() {
+    local g=()
+    match_groups_at g '(h.llo)' 0 'héllo wörld'
+    printf '%s' "${g[1]}"
+  }
+  run wrapped
+  [ "$output" = "héllo" ]
+}
+
 @test "match_groups_at preserves newlines inside groups" {
   wrapped() {
     local g=()
@@ -101,75 +111,97 @@ setup() {
 # --- braced interpolation ---
 
 @test "substitute_string resolves \${VAR} from the environment" {
-  sub() { substitute_string -e false <<<'home=${HOME} end'; }
-  run sub
+  wrapped() { substitute_string -e false <<<'home=${HOME} end'; }
+  run wrapped
   [ "$status" -eq 0 ]
   [ "$output" = "home=$HOME end" ]
 }
 
 @test "substitute_string resolves \${VAR-default} when unset" {
-  sub() { unset MISSING_BATS_VAR; substitute_string -e false <<<'${MISSING_BATS_VAR-dflt}'; }
-  run sub
+  wrapped() { unset MISSING_BATS_VAR; substitute_string -e false <<<'${MISSING_BATS_VAR-dflt}'; }
+  run wrapped
   [ "$output" = "dflt" ]
 }
 
 @test "substitute_string keeps unresolved keys raw with status 101" {
-  sub() { unset MISSING_BATS_VAR; substitute_string -e false <<<'${MISSING_BATS_VAR}'; }
-  run sub
+  wrapped() { unset MISSING_BATS_VAR; substitute_string -e false <<<'${MISSING_BATS_VAR}'; }
+  run wrapped
   [ "$status" -eq 101 ]
   [ "$output" = '${MISSING_BATS_VAR}' ]
 }
 
 @test "substitute_string tolerates spaces inside braces" {
-  sub() { substitute_string -e false <<<'v=${ HOME }'; }
-  run sub
+  wrapped() { substitute_string -e false <<<'v=${ HOME }'; }
+  run wrapped
   [ "$output" = "v=$HOME" ]
 }
 
 @test "substitute_string resolves adjacent placeholders" {
-  sub() { A_BATS=1 B_BATS=2 substitute_string -e false <<<'${A_BATS}${B_BATS}'; }
-  run sub
+  wrapped() { A_BATS=1 B_BATS=2 substitute_string -e false <<<'${A_BATS}${B_BATS}'; }
+  run wrapped
   [ "$output" = "12" ]
 }
 
 @test "substitute_string dies on a missing closing brace" {
-  sub() { substitute_string -e false <<<'${HOME'; }
-  run sub
+  wrapped() { substitute_string -e false <<<'${HOME'; }
+  run wrapped
   [ "$status" -eq 1 ]
   [[ "$output" == *"Missing }"* ]]
 }
 
 @test "substitute_string dies on an empty \${}" {
-  sub() { substitute_string -e false <<<'${}'; }
-  run sub
+  wrapped() { substitute_string -e false <<<'${}'; }
+  run wrapped
   [ "$status" -eq 1 ]
   [[ "$output" == *"Empty interpolate"* ]]
 }
 
 @test "substitute_string with -ib false leaves braced placeholders alone" {
-  sub() { substitute_string -ib false -e false <<<'v=${HOME}'; }
-  run sub
+  wrapped() { substitute_string -ib false -e false <<<'v=${HOME}'; }
+  run wrapped
   [ "$status" -eq 0 ]
   [ "$output" = 'v=${HOME}' ]
+}
+
+@test "multibyte UTF-8 templates round-trip" {
+  wrapped() { substitute_string -e false <<<'héllo ${HOME-wörld} ✓'; }
+  run wrapped
+  [ "$status" -eq 0 ]
+  [ "$output" = "héllo $HOME ✓" ]
+}
+
+@test "an empty quoted key stays raw with NO_SUCH_ELEMENT" {
+  wrapped() { substitute_string -e false <<<'a ${""} b'; }
+  run wrapped
+  [ "$status" -eq 101 ]
+  [ "$output" = 'a ${""} b' ]
+}
+
+@test "a failed tokenizer aborts instead of emitting nothing" {
+  # source passed as argument: stdin reading needs cat, which the broken PATH hides
+  wrapped() { PATH=/nonexistent substitute_string -e false bash_env bash_c "" 'x ${HOME}'; }
+  run wrapped
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Failed to tokenize"* ]]
 }
 
 # --- dollar escaping ---
 
 @test "substitute_string halves runs of double dollars by default" {
-  sub() { substitute_string -e false <<<'cost $$HOME'; }
-  run sub
+  wrapped() { substitute_string -e false <<<'cost $$HOME'; }
+  run wrapped
   [ "$output" = 'cost $HOME' ]
 }
 
 @test "substitute_string keeps double dollars with -ud false" {
-  sub() { substitute_string -ud false -e false <<<'cost $$HOME'; }
-  run sub
+  wrapped() { substitute_string -ud false -e false <<<'cost $$HOME'; }
+  run wrapped
   [ "$output" = 'cost $$HOME' ]
 }
 
 @test "substitute_string emits a lone trailing dollar literally" {
-  sub() { substitute_string -e false <<<'end $'; }
-  run sub
+  wrapped() { substitute_string -e false <<<'end $'; }
+  run wrapped
   [ "$status" -eq 0 ]
   [ "$output" = 'end $' ]
 }
@@ -177,20 +209,20 @@ setup() {
 # --- unbraced interpolation ---
 
 @test "unbraced \$VAR resolves when -i true" {
-  sub() { substitute_string -i true -e false <<<'v=$HOME end'; }
-  run sub
+  wrapped() { substitute_string -i true -e false <<<'v=$HOME end'; }
+  run wrapped
   [ "$output" = "v=$HOME end" ]
 }
 
 @test "unbraced interpolation stops at a dot boundary" {
-  sub() { substitute_string -i true -e false <<<'v=$HOME. Done'; }
-  run sub
+  wrapped() { substitute_string -i true -e false <<<'v=$HOME. Done'; }
+  run wrapped
   [ "$output" = "v=$HOME. Done" ]
 }
 
 @test "unbraced interpolation keeps a trailing dot" {
-  sub() { substitute_string -i true -e false <<<'v=$HOME.'; }
-  run sub
+  wrapped() { substitute_string -i true -e false <<<'v=$HOME.'; }
+  run wrapped
   [ "$output" = "v=$HOME." ]
 }
 
@@ -199,8 +231,8 @@ setup() {
     local -n __k="$1"
     printf '<%s>' "${__k[*]}"
   }
-  sub() { substitute_string -i true -e false joined_getter <<<'$a.b done'; }
-  run sub
+  wrapped() { substitute_string -i true -e false joined_getter <<<'$a.b done'; }
+  run wrapped
   [ "$output" = "<a b> done" ]
 }
 
@@ -209,8 +241,8 @@ setup() {
     local -n __k="$1"
     printf '<%s>' "${__k[*]}"
   }
-  sub() { substitute_string -e false joined_getter <<<'${"a b"}'; }
-  run sub
+  wrapped() { substitute_string -e false joined_getter <<<'${"a b"}'; }
+  run wrapped
   [ "$output" = "<a b>" ]
 }
 
@@ -219,8 +251,8 @@ setup() {
     local -n __k="$1"
     printf '<%s>' "${__k[*]}"
   }
-  sub() { substitute_string -e false joined_getter <<<'${x.[0]}'; }
-  run sub
+  wrapped() { substitute_string -e false joined_getter <<<'${x.[0]}'; }
+  run wrapped
   [ "$output" = "<x 0>" ]
 }
 
@@ -231,8 +263,8 @@ setup() {
     echo call >>"$BATS_TEST_TMPDIR/count"
     printf 'V'
   }
-  sub() { substitute_string -e false counting_getter <<<'${k} ${k}'; }
-  run sub
+  wrapped() { substitute_string -e false counting_getter <<<'${k} ${k}'; }
+  run wrapped
   [ "$output" = "V V" ]
   [ "$(wc -l <"$BATS_TEST_TMPDIR/count")" -eq 1 ]
 }
@@ -246,16 +278,16 @@ setup() {
     *) return "$NO_SUCH_ELEMENT" ;;
     esac
   }
-  sub() { substitute_string -e false deepish_getter <<<'${outer}'; }
-  run sub
+  wrapped() { substitute_string -e false deepish_getter <<<'${outer}'; }
+  run wrapped
   [ "$status" -eq 0 ]
   [ "$output" = "x=L" ]
 }
 
 @test "an unexpected getter status aborts with an error" {
   bad_getter() { return 3; }
-  sub() { substitute_string -e false bad_getter <<<'${k}'; }
-  run sub
+  wrapped() { substitute_string -e false bad_getter <<<'${k}'; }
+  run wrapped
   [ "$status" -eq 3 ]
   [[ "$output" == *"Interpolate braced"* ]]
 }
@@ -263,41 +295,48 @@ setup() {
 # --- evaluation ---
 
 @test "\$<...> evaluates through bash" {
-  sub() { substitute_string <<<'n=$<printf %s 42>'; }
-  run sub
+  wrapped() { substitute_string <<<'n=$<printf %s 42>'; }
+  run wrapped
   [ "$output" = "n=42" ]
 }
 
+@test "an empty \$<> evaluates to nothing" {
+  wrapped() { substitute_string <<<'x$<>y'; }
+  run wrapped
+  [ "$status" -eq 0 ]
+  [ "$output" = "xy" ]
+}
+
 @test "evaluation respects > inside double quotes" {
-  sub() { substitute_string <<<'r=$<printf %s "a>b">'; }
-  run sub
+  wrapped() { substitute_string <<<'r=$<printf %s "a>b">'; }
+  run wrapped
   [ "$output" = "r=a>b" ]
 }
 
 @test "evaluation respects escapes inside single quotes" {
-  sub() { substitute_string <<<"x=\$<printf %s 'a\\nb'>"; }
-  run sub
+  wrapped() { substitute_string <<<"x=\$<printf %s 'a\\nb'>"; }
+  run wrapped
   [ "$output" = 'x=a\nb' ]
 }
 
 @test "an unterminated \$< aborts without emitting partial output" {
-  sub() { substitute_string <<<'a $<echo hi'; }
-  run --separate-stderr sub
+  wrapped() { substitute_string <<<'a $<echo hi'; }
+  run --separate-stderr wrapped
   [ "$status" -ne 0 ]
   [ "$output" = "" ]
 }
 
 @test "an evaluator returning NO_SUCH_ELEMENT keeps the raw expression" {
   nse_evaluator() { return "$NO_SUCH_ELEMENT"; }
-  sub() { substitute_string bash_env nse_evaluator <<<'k $<echo x> t'; }
-  run sub
+  wrapped() { substitute_string bash_env nse_evaluator <<<'k $<echo x> t'; }
+  run wrapped
   [ "$status" -eq 101 ]
   [ "$output" = 'k $<echo x> t' ]
 }
 
 @test "a failing evaluated script aborts with its status" {
-  sub() { substitute_string <<<'k $<exit 9>'; }
-  run sub
+  wrapped() { substitute_string <<<'k $<exit 9>'; }
+  run wrapped
   [ "$status" -eq 9 ]
   [[ "$output" == *"Evaluate"* ]]
 }
@@ -305,15 +344,15 @@ setup() {
 # --- option handling ---
 
 @test "unknown options go to stderr, not into the output" {
-  sub() { substitute_string -zz -e false <<<'plain'; }
-  run --separate-stderr sub
+  wrapped() { substitute_string -zz -e false <<<'plain'; }
+  run --separate-stderr wrapped
   [ "$output" = "plain" ]
   [[ "$stderr" == *"Unknown option -zz"* ]]
 }
 
 @test "a missing option value terminates instead of looping" {
-  sub() { substitute_string -i <<<'x'; }
-  run sub
+  wrapped() { substitute_string -i <<<'x'; }
+  run wrapped
   [ "$status" -eq 0 ]
   [ "$output" = "x" ]
 }

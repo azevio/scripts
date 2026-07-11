@@ -9,6 +9,8 @@ setup() {
   VERBOSE=1
 }
 
+# --- log levels ---
+
 @test "info writes the message to stderr, not stdout" {
   run --separate-stderr info "hello"
   [ "$status" -eq 0 ]
@@ -47,6 +49,8 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+# --- formatting ---
+
 @test "COLOR=1 emits ANSI escapes, COLOR=0 does not" {
   COLOR=1
   run info "tinted"
@@ -60,6 +64,8 @@ setup() {
   run info "stamped"
   [[ "$output" =~ \[[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2}\] ]]
 }
+
+# --- check ---
 
 @test "check dies when the condition is true" {
   wrapped() { check '[[ 1 -eq 1 ]]' "always"; }

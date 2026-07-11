@@ -21,6 +21,8 @@ gen_key() {
   gpg_gen_key "${1-pass}" RSA 2048 RSA 2048 "Bats ${2:-One}" "${3:-}" "bats${2:-1}@example.com" 0 >/dev/null 2>&1
 }
 
+# --- local keyring ---
+
 @test "gpg_gen_key creates a key with a passphrase" {
   run gen_key pass One comment
   [ "$status" -eq 0 ]
@@ -70,6 +72,8 @@ gen_key() {
   run gpg_key_list
   [ "$output" = "" ]
 }
+
+# --- keyservers (network, opt-in) ---
 
 @test "is_gpg_key_exported is false for an unpublished key" {
   require_network_opt_in

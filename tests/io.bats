@@ -7,6 +7,8 @@ setup() {
   load_lib io.sh
 }
 
+# --- src ---
+
 @test "src prints a literal argument" {
   run src "just a string"
   [ "$output" = "just a string" ]
@@ -19,22 +21,28 @@ setup() {
 }
 
 @test "src reads stdin when no argument is given" {
-  piped() { printf 'piped data' | src; }
-  run piped
+  wrapped() { printf 'piped data' | src; }
+  run wrapped
   [ "$output" = "piped data" ]
 }
 
+# --- clipboard ---
+
 @test "clipboard returns 1 when no clipboard tool exists" {
-  no_tools() { PATH=/nonexistent clipboard "hi"; }
-  run no_tools
+  wrapped() { PATH=/nonexistent clipboard "hi"; }
+  run wrapped
   [ "$status" -eq 1 ]
 }
+
+# --- hashing ---
 
 @test "file_hash_sha256 computes the known digest of 'abc'" {
   printf 'abc' >"$BATS_TEST_TMPDIR/abc.txt"
   run file_hash_sha256 "$BATS_TEST_TMPDIR/abc.txt"
   [ "$output" = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" ]
 }
+
+# --- downloads ---
 
 @test "download_absent_file downloads via file:// and keeps content" {
   printf 'payload' >"$BATS_TEST_TMPDIR/remote.txt"
@@ -63,34 +71,36 @@ setup() {
   [ ! -e got.txt.partial ]
 }
 
+# --- user input ---
+
 @test "user_input returns what the user types" {
-  typed() { printf 'typed\n' | user_input "def"; }
-  run --separate-stderr typed
+  wrapped() { printf 'typed\n' | user_input "def"; }
+  run --separate-stderr wrapped
   [ "$output" = "typed" ]
 }
 
 @test "user_input falls back to the default on empty input" {
-  empty() { printf '\n' | user_input "def"; }
-  run --separate-stderr empty
+  wrapped() { printf '\n' | user_input "def"; }
+  run --separate-stderr wrapped
   [ "$output" = "def" ]
 }
 
 @test "user_input renders the default label once" {
-  empty() { printf '\n' | user_input "def"; }
-  run --separate-stderr empty
+  wrapped() { printf '\n' | user_input "def"; }
+  run --separate-stderr wrapped
   [[ "$stderr" == *"[def]"* ]]
   [[ "$stderr" != *"def [def]"* ]]
 }
 
 @test "user_input keeps extra arguments as prompt labels" {
-  labeled() { printf '\n' | user_input "def" "def" "" "Enter thing"; }
-  run --separate-stderr labeled
+  wrapped() { printf '\n' | user_input "def" "def" "" "Enter thing"; }
+  run --separate-stderr wrapped
   [[ "$stderr" == *"Enter thing"* ]]
 }
 
 @test "default_user_input prompts with the input name" {
-  named() { printf '\n' | default_user_input "fallback" "" "port"; }
-  run --separate-stderr named
+  wrapped() { printf '\n' | default_user_input "fallback" "" "port"; }
+  run --separate-stderr wrapped
   [ "$output" = "fallback" ]
   [[ "$stderr" == *"Enter port"* ]]
 }
