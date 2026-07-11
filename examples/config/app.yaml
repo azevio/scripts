@@ -1,0 +1,4 @@
+imports:
+  - base.yaml
+banner: "starting ${service} on port ${port}"
+workers: "$<printf %s 4>"

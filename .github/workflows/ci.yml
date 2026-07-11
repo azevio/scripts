@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  YQ_VERSION: v4.47.1
+
+jobs:
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: shellcheck *.sh
+      - name: shfmt
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y shfmt
+          shfmt -i 2 -d *.sh tests/bench.sh examples/*.sh
+
+  test-linux:
+    name: Test (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y bats jq gnupg
+          sudo curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" -o /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+      - name: Run suite
+        run: bats tests
+
+  test-macos:
+    name: Test (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: brew install bash bats-core yq jq gnupg
+      - name: Run suite
+        run: bats tests
+
+  test-windows:
+    name: Test (Windows / Git Bash)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bats
+        run: npm install -g bats
+      - name: Install yq
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_windows_amd64.exe" -o "$HOME/bin/yq.exe"
+          echo "$HOME/bin" >>"$GITHUB_PATH"
+      - name: Run suite
+        run: bats tests
+
+  coverage:
+    name: Coverage (kcov, informational)
+    runs-on: ubuntu-latest
+    # kcov's bash instrumentation breaks the bash_c evaluation tests;
+    # the test matrix above is the gate, this job only measures coverage.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y bats jq gnupg kcov
+          sudo curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" -o /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+      - name: Run suite under kcov
+        run: |
+          kcov --include-path="$PWD" --exclude-path="$PWD/tests,$PWD/coverage" coverage bats tests >/dev/null 2>&1 || true
+          jq -r '"covered " + .percent_covered + "% of " + (.total_lines|tostring) + " lines"' coverage/bats*/coverage.json | tail -1
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage

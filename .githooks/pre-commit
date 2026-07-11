@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Fast pre-commit gate: formatting and static analysis.
+# The full suite runs in CI; run `make check` locally for everything.
+set -euo pipefail
+
+make fmt-check lint
