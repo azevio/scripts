@@ -1,0 +1,19 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "Modular bash utility library: ANSI, logging, IO, networking, GPG, and a yq-backed YAML/template toolkit",
+  "global": "false",
+  "scripts": [
+    "scripts.sh",
+    "ansi.sh",
+    "array.sh",
+    "env.sh",
+    "gpg.sh",
+    "io.sh",
+    "log.sh",
+    "net.sh",
+    "serializer.sh",
+    "string.sh",
+    "time.sh"
+  ]
+}
